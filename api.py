@@ -61,19 +61,25 @@ import csv
 
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    print("Got message : "+TextMessage)
-    number = int(event.message.text)
-    rows_list = []
-    with open(os.path.abspath("maskdata.csv"), newline='') as csvfile:
-        rows = csv.reader(csvfile, delimiter=',')
-        for row in rows:
-            rows_list.append(row)
-
+    print("Got message : "+event.message.text)
+    #number = int(event.message.text)
+    #rows_list = []
     line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=str(rows_list[number]))
+            event.reply_token,
+            TextSendMessage(text="3q for your message")
     )
+    #with open(os.path.abspath("maskdata.csv"), newline='') as csvfile:
+    #    rows = csv.reader(csvfile, delimiter=',')
+    #    for row in rows:
+    #        rows_list.append(row)
+
+    #line_bot_api.reply_message(
+    #    event.reply_token,
+    #    TextSendMessage(text=str(rows_list[number]))
+    #)
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    #app.run(host='0.0.0.0', port=10420, debug=True,ssl_context='adhoc')
+    app.run(host='0.0.0.0', port=10420, debug=True)
+    #app.run(host='127.0.0.1', port=10420, debug=True)
