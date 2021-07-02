@@ -1,4 +1,5 @@
 import os
+import json
 
 
 if os.getenv('DEVELOPMENT') is not None:
@@ -18,12 +19,21 @@ from linebot.exceptions import (
 
 
 
+<<<<<<< Updated upstream
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage, FlexSendMessage, LocationSendMessage,
     VideoSendMessage, ImageSendMessage, StickerSendMessage,
 )
 
 from linebot.models import (
+=======
+from linebot.models import (
+    MessageEvent, TextMessage, TextSendMessage, FlexSendMessage, LocationSendMessage,
+    VideoSendMessage, ImageSendMessage, StickerSendMessage,
+)
+
+from linebot.models import (
+>>>>>>> Stashed changes
     MessageEvent, TextMessage, TextSendMessage, QuickReply, QuickReplyButton, MessageAction,
     DatetimePickerAction, URIAction, CameraAction, CameraRollAction, LocationAction,
     PostbackAction,
@@ -91,6 +101,11 @@ def message_text(event):
             QuickReplyButton(action=MessageAction(label="No", text="I am so sorry."))
 
         ])
+<<<<<<< Updated upstream
+=======
+        
+
+>>>>>>> Stashed changes
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=event.message.text, quick_reply=quick_reply)
@@ -102,10 +117,16 @@ def message_text(event):
             
             
             
+<<<<<<< Updated upstream
             
+=======
+    s0 = json.dumps(flex_notification_message(["Hello", "Welcome!"]))
+    s1 = json.dumps(flex_notification_message(["It is very likely that your symptoms are caused by your medication!"], "Symptoms and Medication"))
+    s2 = json.dumps(flex_notification_message(["Drowsiness", "Dry mouth", "Unsteadiness"], "Common Side-Effects from Medication"))
+>>>>>>> Stashed changes
     line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="Testo")
+            TextSendMessage(text="testo")
     )
     #with open(os.path.abspath("maskdata.csv"), newline='') as csvfile:
     #    rows = csv.reader(csvfile, delimiter=',')
@@ -117,6 +138,76 @@ def message_text(event):
     #    TextSendMessage(text=str(rows_list[number]))
     #)
 
+"Template for sending a flex message"
+
+'Normal message - Use this when providing an answer to user'
+def flex_notification_message(text: list, title:str = "" , titleBackgroundColor:str = "#00B900"):
+    content = []
+    if type(text) == list:
+        for i0 in text:
+            content.append({"type": "text",
+                            "text": i0,
+                            "wrap": True
+                            })
+    else:
+        content.append({"type": "text",
+                       "text": i0,
+                       "wrap": True
+                       })
+    bubble = {
+          "type": "bubble",
+          "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": content
+          },
+           "styles": {
+             "header": {
+               "backgroundColor": titleBackgroundColor
+             }
+           }
+         }
+    if(len(title)>0):
+        bubble["header"] = {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": title,
+                "wrap": True,
+                "color": "#FFFFFF",
+                "weight": "bold"
+              }
+            ]
+          }
+    
+    return bubble
+
+'To modify'
+# def create_bubble():
+    
+#     bubble = {
+#       "type": "bubble",
+#       "body": {
+#         "type": "box",
+#         "layout": "vertical",
+#         "contents": []
+#       }
+#     }
+    
+#     return bubble
+
+'To modify'
+# def add_content(content):
+#     flex = {
+#       "type": "carousel",
+#       "contents": content
+#     }
+
+#     return flex
+# if __name__ == '__main__':
+   
 
 if __name__ == "__main__":
     #app.run(host='0.0.0.0', port=10420, debug=True,ssl_context='adhoc')
