@@ -49,8 +49,12 @@ def flex_notification_message(text: list, title:str = "" , titleBackgroundColor:
               }
             ]
           }
+        
+    flex = {"type": "flex",
+            "altText": "Testing",
+            "contents": bubble}
     
-    return bubble
+    return flex
 
 'To modify'
 # def create_bubble():
