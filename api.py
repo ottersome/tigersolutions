@@ -1,6 +1,6 @@
 import os
 import json
-
+import csv
 
 if os.getenv('DEVELOPMENT') is not None:
     from dotenv import load_dotenv
@@ -24,6 +24,10 @@ from linebot.models import (
     DatetimePickerAction, URIAction, CameraAction, CameraRollAction, LocationAction,
     PostbackAction, LocationMessage, FlexSendMessage
 )
+
+from SideEffect.fullse_dict_create import name_se_dic as nsd
+from Kaggle.drugsCom import df
+from flex_messages.flex_function import flex_notification_message
 
 app = Flask(__name__)
 
@@ -61,55 +65,7 @@ def callback():
 
     return 'OK'
 
-
-# CSV Example
-import csv
-
-"Template for sending a flex message"
-
-'Normal message - Use this when providing an answer to user'
-def flex_notification_message(text: list, title:str = "" , titleBackgroundColor:str = "#00B900"):
-    content = []
-    if type(text) == list:
-        for i0 in text:
-            content.append({"type": "text",
-                            "text": i0,
-                            "wrap": True
-                            })
-    else:
-        content.append({"type": "text",
-                       "text": i0,
-                       "wrap": True
-                       })
-    bubble = {
-          "type": "bubble",
-          "body": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": content
-          },
-           "styles": {
-             "header": {
-               "backgroundColor": titleBackgroundColor
-             }
-           }
-         }
-    if(len(title)>0):
-        bubble["header"] = {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-              {
-                "type": "text",
-                "text": title,
-                "wrap": True,
-                "color": "#FFFFFF",
-                "weight": "bold"
-              }
-            ]
-          }
-    
-    return bubble
+symptom_keys = []
 
 @handler.add(MessageEvent, message=LocationMessage)
 def message_location(event):
@@ -123,12 +79,10 @@ def message_location(event):
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
     print("Got message : " + event.message.text)
-    #number = int(event.message.text)
-    #rows_list = []
     print('Message received\n\n')
     key_message = str(event.message.text).lower()
+    key_splitted = key_message.split()
     if 'location' in key_message:
-        print('inside if Location')
         quick_reply = QuickReply(
         items=[
             QuickReplyButton(action=LocationAction(label="Set Location✍️")),
@@ -140,68 +94,136 @@ def message_text(event):
             event.reply_token,
             TextSendMessage(text=event.message.text, quick_reply=quick_reply)
         )
-        
-        # output = LocationSendMessage(
-        #     title = 'My location',
-        #     address = 'Position')
     elif 'symptom' in key_message and 'medicine' in key_message:
-        line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text="The medicine you take is: ")
-        )
+        symptom_count = 0
+        medicine_count = 0
+        
+        for m0, i0 in zip(key_splitted, range(len(key_splitted))):
+            if m0 == 'symptom':
+                symptom_count = i0
+            if m0 == 'medicine':
+                medicine_count = i0
+        
+        symptom_keys = key_splitted[(symptom_count + 1): medicine_count]
+        medicine_keys = key_splitted[(medicine_count + 1):]
+        
+        
+        if(medicine_keys[0] in nsd):
+            listings = nsd[medicine_keys[0]]
+            listings = " ".join(listings).lower()
+            count = len(symptom_keys)
+            count_max = len(symptom_keys)
+            
+            for m0 in symptom_keys:
+                if(m0 in listings):
+                    count -= 1
+            if count == 0:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="It is very likely the symptoms you are having are cause by your medication."))
+            elif count < count_max:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="Some of your symptoms align with the side-effect of your medication."))
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="Your symptoms are not caused by your medication!"))
+            
+            'Provide the option to search in vicinity - Symptom keys is global list of string variable'
+            # line_bot_api.reply_message(
+            #     event.reply_token,
+            #     TextSendMessage(text="Would you like to provide your location to find news with your symptoms in the area?"))
+        
+            # quick_reply = QuickReply(
+            #     items=[
+            #         QuickReplyButton(action=LocationAction(label="Set Location✍️")),
+            #         QuickReplyButton(action=MessageAction(label="No", text="No"))])
+        
+            # line_bot_api.reply_message(
+            #     event.reply_token,
+            #     TextSendMessage(text=event.message.text, quick_reply=quick_reply))
+        
+                
+        else:
+            line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="Medicine not found"))
+    elif 'medicine' in key_message:
+        medicine_count = 0
+        
+        for m0, i0 in zip(key_splitted, range(len(key_splitted))):
+            if m0 == 'medicine':
+                medicine_count = i0
+        
+        medicine_keys = key_splitted[(medicine_count + 1):]
+        if(medicine_keys[0] in nsd):
+        
+            listings = nsd[medicine_keys[0]]
+            
+            if(len(listings)>2):
+                listings[-1] =  'and ' + listings[-1]
+                listings = ", ".join(listings).lower()
+    
+            elif(len(listings)>1):
+                listings = " and ".join(listings).lower()
+            else:
+                listings = str(listings[0])
+            
+            
+            line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="List of Side-Effects include: "  + listings))
+            
+            df_temp = df[df['drugName'].isin([medicine_keys[0].capitalize()])].sort_values(by=['rating'], ascending=False).review.head(3).tolist()
+            
+            line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="Reviews: "  + "\n ".join(df_temp)))
+            
+            
+        else:
+            line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="Medicine not found"))
     elif 'symptom' in key_message:
         line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="List of Side-Effects are: ")
+        TextSendMessage(text="Please also provide your medications!")
         )
+        
+        'Provide the option to search in vicinity - Symptom keys is global list of string variable'
+        # line_bot_api.reply_message(
+        #     event.reply_token,
+        #     TextSendMessage(text="Would you like to provide your location to find news with your symptoms in the area?"))
+    
+        # quick_reply = QuickReply(
+        #     items=[
+        #         QuickReplyButton(action=LocationAction(label="Set Location✍️")),
+        #         QuickReplyButton(action=MessageAction(label="No", text="No"))])
+    
+        # line_bot_api.reply_message(
+        #     event.reply_token,
+        #     TextSendMessage(text=event.message.text, quick_reply=quick_reply))
+        
     elif 'no' in key_message:
         line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text="Okay")
         )
-    elif event.message.text == 'Flex':
+    elif event.message.text == 'flex':
+        'Test Flex'
         s0 = json.dumps(flex_notification_message(["Hello", "Welcome!"]))
-        s1 = json.dumps(flex_notification_message(["It is very likely that your symptoms are caused by your medication!"], "Symptoms and Medication"))
-        s2 = json.dumps(flex_notification_message(["Drowsiness", "Dry mouth", "Unsteadiness"], "Common Side-Effects from Medication"))
+        # s1 = json.dumps(flex_notification_message(["It is very likely that your symptoms are caused by your medication!"], "Symptoms and Medication"))
+        # s2 = json.dumps(flex_notification_message(["Drowsiness", "Dry mouth", "Unsteadiness"], "Common Side-Effects from Medication"))
+        line_bot_api.reply_message(
+            event.reply_token,
+            FlexSendMessage(content=s0))
     else:
         line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text="No Comment")
         )
-    
-    print("Done")
-
-
-    #with open(os.path.abspath("maskdata.csv"), newline='') as csvfile:
-    #    rows = csv.reader(csvfile, delimiter=',')
-    #    for row in rows:
-    #        rows_list.append(row)
-
-    #line_bot_api.reply_message(
-    #    event.reply_token,
-    #    TextSendMessage(text=str(rows_list[number]))
-    #)
-
-'To modify'
-# def create_bubble():
-    
-#     bubble = {
-#       "type": "bubble",
-#       "body": {
-#         "type": "box",
-#         "layout": "vertical",
-#         "contents": []
-#       }
-#     }
-    
-#     return bubble
-
-'To modify'
-# def add_content(content):
-#     flex = {
-#       "type": "carousel",
-#       "contents": content
-#     }
    
 
 if __name__ == "__main__":
