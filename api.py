@@ -170,16 +170,22 @@ def message_text(event):
             else:
                 listings = str(listings[0])
             
+            df_temp = df[df['drugName'].isin([medicine_keys[0].capitalize()])].sort_values(by=['rating'], ascending=False).review.head(15).tolist()
             
+            temp_str = "\n\nReviews:"
+            for d0 in df_temp:
+                print("Reviews: ", d0)
+                print("\n")
+                if(len(d0) < 100):
+                    # print("Reviews: ", d0)
+                    # line_bot_api.message(
+                    # event.reply_token,
+                    # TextSendMessage(text="Reviews: "  + d0))
+                    temp_str += "\n" + d0 + "\n"
+                    
             line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="List of Side-Effects include: "  + listings))
-            
-            df_temp = df[df['drugName'].isin([medicine_keys[0].capitalize()])].sort_values(by=['rating'], ascending=False).review.head(3).tolist()
-            
-            line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text="Reviews: "  + "\n ".join(df_temp)))
+            TextSendMessage(text="List of Side-Effects include: "  + listings + "." + temp_str))
             
             
         else:
@@ -213,12 +219,12 @@ def message_text(event):
         )
     elif event.message.text == 'flex':
         'Test Flex'
-        s0 = json.dumps(flex_notification_message(["Hello", "Welcome!"]))
+        # s0 = json.dumps(flex_notification_message(["Hello", "Welcome!"]))
         # s1 = json.dumps(flex_notification_message(["It is very likely that your symptoms are caused by your medication!"], "Symptoms and Medication"))
         # s2 = json.dumps(flex_notification_message(["Drowsiness", "Dry mouth", "Unsteadiness"], "Common Side-Effects from Medication"))
-        line_bot_api.reply_message(
-            event.reply_token,
-            FlexSendMessage(content=s0))
+        # line_bot_api.reply_message(
+        #     event.reply_token,
+        #     FlexSendMessage(content=s0))
     else:
         line_bot_api.reply_message(
         event.reply_token,
