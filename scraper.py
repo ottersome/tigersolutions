@@ -23,34 +23,52 @@ class Scraper:
         res = ""
         for link in self.finalLinks:
             res += link+"\n\tLocation : "
-            res += str(self.scrapeLinkForLocations(link))
+            res += str(self.scrapeTextForLocation(link))
             res += "\n"
         return res
-    def scrapeLinkForLocations(self,url):
+    def scrapeTextForLocation(self,pageText):
         locations = {}
-        req =  Request(url,headers={'User-Agent': 'Mozilla/5.0'})
-        page = Scraper.text_from_html(urlopen(req))
-        doc = self.nlp_wk(page)
+        doc = self.nlp_wk(pageText)
         locations = {ent.text for ent in doc.ents if ent.label_ in ['GPE']}
         for ent in doc.ents:
             if ent.label_ in ['GPE'] and ent.text not in locations:
                 locations[ent.text]
         return locations
     def organizeList(self):
-        #Organize First by a Location
-            self.finalLinks.sort(key=self.sortPerLocations)
-        #Organize Second by Symptoms
-            self.finalLinks.sort(key=self.sortPerSymptoms)
+        #Organize score of list
+        listWithScore = self.getScoredLists()
+        listWithScore.sort(key=Scraper.sortByScore,reverse=True)
+        for element in listWithScore:
+            print(element)
+    @staticmethod
+    def sortByScore(element):
+        return element[1]
     # Python sorts in ascending mode by default
-    @staticmethod
-    def sortPerLocations():
-        #self.scrapeLinkForLocations(link).regions
-        #TODO fxi this
-        return len(interection(self.curLocation,self.curLocation))
-        pass
-    @staticmethod
-    def sortPerSymptoms():
-        pass
+    # In this function we will score each url
+    #   by the amount of matches it has for both location and symptom
+    #
+    def getScoredLists(self):
+        scoredList = []
+        for url in self.finalList:
+            req =  Request(url,headers={'User-Agent': 'Mozilla/5.0'})
+            pageText = Scraper.text_from_html(urlopen(req))
+
+            #Geting Locations match
+            locationsMatch = 0
+            locations = self.scrapeTextForLocation(pageText)
+            if len(locations) >0:
+                for location in locations:
+                    if location in self.curLocation:
+                        locationsMatch += 1
+                        continue
+            symptomsMatch = 0
+            for symptom in self.symptoms:
+                if symptom in pageText:
+                    symptomsMatch += 1
+                    continue
+            scoredList.append([url,symptomsMatch+locationsMatch])
+        return scoredList
+
     @staticmethod
     def getFinalLinks(parentSources):
         finalSource = []
@@ -83,6 +101,6 @@ class Scraper:
 parentWebsites = [\
         "http://www.sciencedaily.com/news/health_medicine/infectious_diseases/",
         ]
-scrappy = Scraper(None,None,parentWebsites)
-
-print(scrappy)
+scrappy = Scraper("New York"\
+        ,["fever","nausea"],parentWebsites)
+scrappy.organizeList()
