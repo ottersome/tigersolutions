@@ -66,7 +66,7 @@ def message_text(event):
     #rows_list = []
     line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="3q for your message")
+            TextSendMessage(text="Testo")
     )
     #with open(os.path.abspath("maskdata.csv"), newline='') as csvfile:
     #    rows = csv.reader(csvfile, delimiter=',')
