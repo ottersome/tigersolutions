@@ -1,5 +1,6 @@
 import os
 
+
 if os.getenv('DEVELOPMENT') is not None:
     from dotenv import load_dotenv
 
@@ -14,8 +15,18 @@ from linebot import (
 from linebot.exceptions import (
     InvalidSignatureError
 )
+
+
+
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
+    MessageEvent, TextMessage, TextSendMessage, FlexSendMessage, LocationSendMessage,
+    VideoSendMessage, ImageSendMessage, StickerSendMessage,
+)
+
+from linebot.models import (
+    MessageEvent, TextMessage, TextSendMessage, QuickReply, QuickReplyButton, MessageAction,
+    DatetimePickerAction, URIAction, CameraAction, CameraRollAction, LocationAction,
+    PostbackAction,
 )
 
 app = Flask(__name__)
@@ -64,6 +75,34 @@ def message_text(event):
     print("Got message : "+event.message.text)
     #number = int(event.message.text)
     #rows_list = []
+    print('Message received')
+    if event.message.text == 'Location':
+        print('inside if Location')
+        quick_reply = QuickReply(
+        items=[
+            # QuickReplyButton(action=MessageAction(label="Hello", text="World")),
+            # QuickReplyButton(action=DatetimePickerAction(
+            #     label="Time",
+            #     data="storeId=12345",
+            #     mode="datetime",)),
+            # QuickReplyButton(action=CameraAction(label="Camera")),
+            # QuickReplyButton(action=CameraRollAction(label="Camera Roll")),
+            QuickReplyButton(action=LocationAction(label="Set Location✍️")),
+            QuickReplyButton(action=MessageAction(label="No", text="I am so sorry."))
+
+        ])
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=event.message.text, quick_reply=quick_reply)
+        )
+        
+        # output = LocationSendMessage(
+        #     title = 'My location',
+        #     address = 'Position')
+            
+            
+            
+            
     line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text="Testo")
