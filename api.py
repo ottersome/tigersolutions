@@ -1,7 +1,7 @@
 import os
 import json
 import csv
-import 
+from scraper import Scraper
 
 parentWebsites = [\
         "http://www.sciencedaily.com/news/health_medicine/infectious_diseases/",
@@ -79,12 +79,19 @@ def message_location(event):
             ,["fever","nausea"],parentWebsites)
     scrappy.organizeList()
     stringSymp = str(symptom_keys)
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text="Your location is: " + event.message.address +\
-                "\nAnd your symptoms are : " + stringSymp
+    
+    scrappingText = "Result from scrapping:\n"
+    
+    # line_bot_api.reply_message(
+    #     event.reply_token,
+    #     TextSendMessage(text="Your location is: " + event.message.address +\
+    #             "\nAnd your symptoms are : " + stringSymp
 
-            ))
+    #         ))
+    
+    line_bot_api.reply_message(
+    event.reply_token,
+    TextSendMessage(text=scrappingText ))
     
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
@@ -143,8 +150,26 @@ def message_text(event):
             
             'Provide the option to search in vicinity - Symptom keys is global list of string variable'
         
-    elif 'symptom' in key_message and 'location' in key_message:
-                
+    elif 'symptom' in key_message:
+        symptom_count = 0
+        
+        for m0, i0 in zip(key_splitted, range(len(key_splitted))):
+            if m0 == 'symptom':
+                symptom_count = i0
+        
+        symptom_keys = key_splitted[(symptom_count + 1):]
+        if(len(symptom_keys)>0):
+            quick_reply = QuickReply(
+            items=[
+                QuickReplyButton(action=LocationAction(label="Set Location✍️")),
+                QuickReplyButton(action=MessageAction(label="No", text="No"))
+    
+            ])
+            
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=event.message.text, quick_reply=quick_reply)
+            )
         else:
             line_bot_api.reply_message(
             event.reply_token,
@@ -192,13 +217,13 @@ def message_text(event):
             line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text="Medicine not found"))
-    elif 'symptom' in key_message:
-        line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text="Please also provide your medications!")
-        )
+    # elif 'symptom' in key_message:
+    #     line_bot_api.reply_message(
+    #     event.reply_token,
+    #     TextSendMessage(text="Please also provide your medications!")
+    #     )
         
-        'Provide the option to search in vicinity - Symptom keys is global list of string variable'
+    #     'Provide the option to search in vicinity - Symptom keys is global list of string variable'
     elif 'no' in key_message:
         line_bot_api.reply_message(
         event.reply_token,
