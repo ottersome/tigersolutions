@@ -75,12 +75,12 @@ def message_location(event):
     print("Location was provided")
     print("Got message:", event.message.address) 
     print("Longitude and Latitude", event.message.longitude, " x " , event.message.latitude)
-    scrappy = Scraper(event.message.address\
-            ,["fever","nausea"],parentWebsites)
-    scrappy.organizeList()
     stringSymp = str(symptom_keys)
+    scrappy = Scraper(event.message.address\
+            ,symptom_keys,parentWebsites)
+    articles = scrappy.organizeList()
     
-    scrappingText = "Result from scrapping:\n"
+    scrappingText = articles[0][0]
     
     # line_bot_api.reply_message(
     #     event.reply_token,
@@ -95,7 +95,8 @@ def message_location(event):
     
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    print("Got message : " + event.message.text)
+    print("Processing Message:")
+    print(event.message.text)
     print('Message received\n\n')
     key_message = str(event.message.text).lower()
     key_splitted = key_message.split()
