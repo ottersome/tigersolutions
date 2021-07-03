@@ -38,8 +38,8 @@ class Scraper:
         #Organize score of list
         listWithScore = self.getScoredLists()
         listWithScore.sort(key=Scraper.sortByScore,reverse=True)
-        for element in listWithScore:
-            print(element)
+        return listWithScore
+
     @staticmethod
     def sortByScore(element):
         return element[1]
@@ -98,9 +98,3 @@ class Scraper:
             return False
         return True
 
-parentWebsites = [\
-        "http://www.sciencedaily.com/news/health_medicine/infectious_diseases/",
-        ]
-scrappy = Scraper("New York"\
-        ,["fever","nausea"],parentWebsites)
-scrappy.organizeList()

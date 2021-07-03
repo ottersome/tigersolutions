@@ -1,6 +1,11 @@
 import os
 import json
 import csv
+import 
+
+parentWebsites = [\
+        "http://www.sciencedaily.com/news/health_medicine/infectious_diseases/",
+        ]
 
 if os.getenv('DEVELOPMENT') is not None:
     from dotenv import load_dotenv
@@ -16,8 +21,6 @@ from linebot import (
 from linebot.exceptions import (
     InvalidSignatureError
 )
-
-
 
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage, QuickReply, QuickReplyButton, MessageAction,
@@ -72,9 +75,16 @@ def message_location(event):
     print("Location was provided")
     print("Got message:", event.message.address) 
     print("Longitude and Latitude", event.message.longitude, " x " , event.message.latitude)
+    scrappy = Scraper(event.message.address\
+            ,["fever","nausea"],parentWebsites)
+    scrappy.organizeList()
+    stringSymp = str(symptom_keys)
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text="Your location is: " + event.message.address))
+        TextSendMessage(text="Your location is: " + event.message.address +\
+                "\nAnd your symptoms are : " + stringSymp
+
+            ))
     
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
@@ -82,19 +92,20 @@ def message_text(event):
     print('Message received\n\n')
     key_message = str(event.message.text).lower()
     key_splitted = key_message.split()
-    if 'location' in key_message:
-        quick_reply = QuickReply(
-        items=[
-            QuickReplyButton(action=LocationAction(label="Set Location✍️")),
-            QuickReplyButton(action=MessageAction(label="No", text="No"))
+    #if 'location' in key_message:
+    #    quick_reply = QuickReply(
+    #    items=[
+    #        QuickReplyButton(action=LocationAction(label="Set Location✍️")),
+    #        QuickReplyButton(action=MessageAction(label="No", text="No"))
 
-        ])
-        
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=event.message.text, quick_reply=quick_reply)
-        )
-    elif 'symptom' in key_message and 'medicine' in key_message:
+    #    ])
+    #    
+    #    line_bot_api.reply_message(
+    #        event.reply_token,
+    #        TextSendMessage(text=event.message.text, quick_reply=quick_reply)
+    #    )
+    #elif 'symptom' in key_message and 'medicine' in key_message:
+    if 'symptom' in key_message and 'medicine' in key_message:
         symptom_count = 0
         medicine_count = 0
         
@@ -131,19 +142,8 @@ def message_text(event):
                     TextSendMessage(text="Your symptoms are not caused by your medication!"))
             
             'Provide the option to search in vicinity - Symptom keys is global list of string variable'
-            # line_bot_api.reply_message(
-            #     event.reply_token,
-            #     TextSendMessage(text="Would you like to provide your location to find news with your symptoms in the area?"))
         
-            # quick_reply = QuickReply(
-            #     items=[
-            #         QuickReplyButton(action=LocationAction(label="Set Location✍️")),
-            #         QuickReplyButton(action=MessageAction(label="No", text="No"))])
-        
-            # line_bot_api.reply_message(
-            #     event.reply_token,
-            #     TextSendMessage(text=event.message.text, quick_reply=quick_reply))
-        
+    elif 'symptom' in key_message and 'location' in key_message:
                 
         else:
             line_bot_api.reply_message(
@@ -199,19 +199,6 @@ def message_text(event):
         )
         
         'Provide the option to search in vicinity - Symptom keys is global list of string variable'
-        # line_bot_api.reply_message(
-        #     event.reply_token,
-        #     TextSendMessage(text="Would you like to provide your location to find news with your symptoms in the area?"))
-    
-        # quick_reply = QuickReply(
-        #     items=[
-        #         QuickReplyButton(action=LocationAction(label="Set Location✍️")),
-        #         QuickReplyButton(action=MessageAction(label="No", text="No"))])
-    
-        # line_bot_api.reply_message(
-        #     event.reply_token,
-        #     TextSendMessage(text=event.message.text, quick_reply=quick_reply))
-        
     elif 'no' in key_message:
         line_bot_api.reply_message(
         event.reply_token,
@@ -219,12 +206,6 @@ def message_text(event):
         )
     elif event.message.text == 'flex':
         'Test Flex'
-        # s0 = json.dumps(flex_notification_message(["Hello", "Welcome!"]))
-        # s1 = json.dumps(flex_notification_message(["It is very likely that your symptoms are caused by your medication!"], "Symptoms and Medication"))
-        # s2 = json.dumps(flex_notification_message(["Drowsiness", "Dry mouth", "Unsteadiness"], "Common Side-Effects from Medication"))
-        # line_bot_api.reply_message(
-        #     event.reply_token,
-        #     FlexSendMessage(content=s0))
     else:
         line_bot_api.reply_message(
         event.reply_token,
