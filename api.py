@@ -1,4 +1,6 @@
 import os
+import json
+import csv
 
 if os.getenv('DEVELOPMENT') is not None:
     from dotenv import load_dotenv
@@ -14,9 +16,18 @@ from linebot import (
 from linebot.exceptions import (
     InvalidSignatureError
 )
+
+
+
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
+    MessageEvent, TextMessage, TextSendMessage, QuickReply, QuickReplyButton, MessageAction,
+    DatetimePickerAction, URIAction, CameraAction, CameraRollAction, LocationAction,
+    PostbackAction, LocationMessage, FlexSendMessage
 )
+
+from SideEffect.fullse_dict_create import name_se_dic as nsd
+from Kaggle.drugsCom import df
+from flex_messages.flex_function import flex_notification_message
 
 app = Flask(__name__)
 
@@ -54,32 +65,175 @@ def callback():
 
     return 'OK'
 
+symptom_keys = []
 
-# CSV Example
-import csv
-
-
+@handler.add(MessageEvent, message=LocationMessage)
+def message_location(event):
+    print("Location was provided")
+    print("Got message:", event.message.address) 
+    print("Longitude and Latitude", event.message.longitude, " x " , event.message.latitude)
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text="Your location is: " + event.message.address))
+    
 @handler.add(MessageEvent, message=TextMessage)
 def message_text(event):
-    print("Got message : "+event.message.text)
-    #number = int(event.message.text)
-    #rows_list = []
-    line_bot_api.reply_message(
+    print("Got message : " + event.message.text)
+    print('Message received\n\n')
+    key_message = str(event.message.text).lower()
+    key_splitted = key_message.split()
+    if 'location' in key_message:
+        quick_reply = QuickReply(
+        items=[
+            QuickReplyButton(action=LocationAction(label="Set Location✍️")),
+            QuickReplyButton(action=MessageAction(label="No", text="No"))
+
+        ])
+        
+        line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="Testo")
-    )
-    #with open(os.path.abspath("maskdata.csv"), newline='') as csvfile:
-    #    rows = csv.reader(csvfile, delimiter=',')
-    #    for row in rows:
-    #        rows_list.append(row)
-
-    #line_bot_api.reply_message(
-    #    event.reply_token,
-    #    TextSendMessage(text=str(rows_list[number]))
-    #)
-
+            TextSendMessage(text=event.message.text, quick_reply=quick_reply)
+        )
+    elif 'symptom' in key_message and 'medicine' in key_message:
+        symptom_count = 0
+        medicine_count = 0
+        
+        for m0, i0 in zip(key_splitted, range(len(key_splitted))):
+            if m0 == 'symptom':
+                symptom_count = i0
+            if m0 == 'medicine':
+                medicine_count = i0
+        
+        symptom_keys = key_splitted[(symptom_count + 1): medicine_count]
+        medicine_keys = key_splitted[(medicine_count + 1):]
+        
+        
+        if(medicine_keys[0] in nsd):
+            listings = nsd[medicine_keys[0]]
+            listings = " ".join(listings).lower()
+            count = len(symptom_keys)
+            count_max = len(symptom_keys)
+            
+            for m0 in symptom_keys:
+                if(m0 in listings):
+                    count -= 1
+            if count == 0:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="It is very likely the symptoms you are having are cause by your medication."))
+            elif count < count_max:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="Some of your symptoms align with the side-effect of your medication."))
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="Your symptoms are not caused by your medication!"))
+            
+            'Provide the option to search in vicinity - Symptom keys is global list of string variable'
+            # line_bot_api.reply_message(
+            #     event.reply_token,
+            #     TextSendMessage(text="Would you like to provide your location to find news with your symptoms in the area?"))
+        
+            # quick_reply = QuickReply(
+            #     items=[
+            #         QuickReplyButton(action=LocationAction(label="Set Location✍️")),
+            #         QuickReplyButton(action=MessageAction(label="No", text="No"))])
+        
+            # line_bot_api.reply_message(
+            #     event.reply_token,
+            #     TextSendMessage(text=event.message.text, quick_reply=quick_reply))
+        
+                
+        else:
+            line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="Medicine not found"))
+    elif 'medicine' in key_message:
+        medicine_count = 0
+        
+        for m0, i0 in zip(key_splitted, range(len(key_splitted))):
+            if m0 == 'medicine':
+                medicine_count = i0
+        
+        medicine_keys = key_splitted[(medicine_count + 1):]
+        if(medicine_keys[0] in nsd):
+        
+            listings = nsd[medicine_keys[0]]
+            
+            if(len(listings)>2):
+                listings[-1] =  'and ' + listings[-1]
+                listings = ", ".join(listings).lower()
+    
+            elif(len(listings)>1):
+                listings = " and ".join(listings).lower()
+            else:
+                listings = str(listings[0])
+            
+            df_temp = df[df['drugName'].isin([medicine_keys[0].capitalize()])].sort_values(by=['rating'], ascending=False).review.head(15).tolist()
+            
+            temp_str = "\n\nReviews:"
+            for d0 in df_temp:
+                print("Reviews: ", d0)
+                print("\n")
+                if(len(d0) < 100):
+                    # print("Reviews: ", d0)
+                    # line_bot_api.message(
+                    # event.reply_token,
+                    # TextSendMessage(text="Reviews: "  + d0))
+                    temp_str += "\n" + d0 + "\n"
+                    
+            line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="List of Side-Effects include: "  + listings + "." + temp_str))
+            
+            
+        else:
+            line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="Medicine not found"))
+    elif 'symptom' in key_message:
+        line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text="Please also provide your medications!")
+        )
+        
+        'Provide the option to search in vicinity - Symptom keys is global list of string variable'
+        # line_bot_api.reply_message(
+        #     event.reply_token,
+        #     TextSendMessage(text="Would you like to provide your location to find news with your symptoms in the area?"))
+    
+        # quick_reply = QuickReply(
+        #     items=[
+        #         QuickReplyButton(action=LocationAction(label="Set Location✍️")),
+        #         QuickReplyButton(action=MessageAction(label="No", text="No"))])
+    
+        # line_bot_api.reply_message(
+        #     event.reply_token,
+        #     TextSendMessage(text=event.message.text, quick_reply=quick_reply))
+        
+    elif 'no' in key_message:
+        line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text="Okay")
+        )
+    elif event.message.text == 'flex':
+        'Test Flex'
+        # s0 = json.dumps(flex_notification_message(["Hello", "Welcome!"]))
+        # s1 = json.dumps(flex_notification_message(["It is very likely that your symptoms are caused by your medication!"], "Symptoms and Medication"))
+        # s2 = json.dumps(flex_notification_message(["Drowsiness", "Dry mouth", "Unsteadiness"], "Common Side-Effects from Medication"))
+        # line_bot_api.reply_message(
+        #     event.reply_token,
+        #     FlexSendMessage(content=s0))
+    else:
+        line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text="No Comment")
+        )
+   
 
 if __name__ == "__main__":
     #app.run(host='0.0.0.0', port=10420, debug=True,ssl_context='adhoc')
     app.run(host='0.0.0.0', port=10420, debug=True)
     #app.run(host='127.0.0.1', port=10420, debug=True)
+
